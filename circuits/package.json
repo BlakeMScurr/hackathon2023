@@ -1,0 +1,13 @@
+{
+  "name": "circuits",
+  "version": "1.0.0",
+  "description": "Circuits for SNARKs to be used as evidence to keep centralised servers honest",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Blake McAlevey-Scurr",
+  "dependencies": {
+    "circomlib": "^2.0.5"
+  }
+}
