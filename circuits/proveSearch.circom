@@ -1,7 +1,7 @@
 pragma circom 2.0.0;
 
-include "../node_modules/circomlib/circuits/poseidon.circom";
-include "../node_modules/circomlib/circuits/bitify.circom";
+include "node_modules/circomlib/circuits/poseidon.circom";
+include "node_modules/circomlib/circuits/bitify.circom";
 
 
 // if s == 0 returns [in[0], in[1]]
@@ -43,14 +43,11 @@ template MerkleTreeChecker(levels) {
 
 // Note, the above code is directly copied from https://github.com/ChihChengLiang/poseidon-tornado/blob/main/circuits/merkleTree.circom
 
-// We are using a sparse merkle tree with key = username | postNumber
-// We limit users to 2^40 ~= 1,000,000,000,000 posts, and usernames are ethereum adresses of 20 bytes.
-// This gives our key a bit length of 40 + 20 * 8 = 200, which fits within a standard field element
-template SearchByUserAndPostNumber() {
+template SearchByUserAndPostNumber(depth) {
     signal input query;
     signal input message[8]; // We have a 254 byte message, which fits in 8 2^254 bit field elements (note this includes a 64 byte ecdsa signature, leaving 190 bytes for actual text)
     signal input root;
-    signal input pathElements[200];
+    signal input pathElements[depth];
 
     // we hash the message together to get the leaf node in the merkle tree
     component hasher = Poseidon(8);
@@ -60,11 +57,11 @@ template SearchByUserAndPostNumber() {
 
     // we decompose the query into the path of the merkle tree
     signal pathIndices;
-    component bitifier = Num2Bits(200);
+    component bitifier = Num2Bits(depth);
     bitifier.in <== query;
 
-    component mtc = MerkleTreeChecker(200);
-    for (var i = 0; i < 200; i++) {
+    component mtc = MerkleTreeChecker(depth);
+    for (var i = 0; i < depth; i++) {
         mtc.pathIndices[i] <== bitifier.out[i];
         mtc.pathElements[i] <== pathElements[i];
     }
@@ -72,6 +69,7 @@ template SearchByUserAndPostNumber() {
     mtc.root <== root;
 }
 
-// A sparse merkle tree has a depth equal to the bit length of its keys.
-// In this case, our keys are an ethereum address (20 bytes) and a tweet style message (140 bytes).
-component main { public [query, root, message ] } = SearchByUserAndPostNumber();
+// We are using a sparse merkle tree with key = username | postNumber
+// We limit users to 2^40 ~= 1,000,000,000,000 posts, and usernames are ethereum adresses of 20 bytes.
+// This gives our key a bit length of 40 + 20 * 8 = 200, which fits within a standard field element
+component main { public [query, root, message ] } = SearchByUserAndPostNumber(200);
